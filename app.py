@@ -178,6 +178,7 @@ def generate_card_number(seed):
 defaults = {
     'logged_in': False, 'current_user': None, 'page': 'login',
     'pending_transaction': None, 'pin_attempts': 0, 'selected_merchant': None,
+    'gps_saved': False,
 }
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -287,6 +288,47 @@ function go(){
   }else{s.innerHTML='❌ Use Chrome on your phone.';s.style.color='#dc2626';}
 }
 </script></body></html>""", height=180)
+
+# ---------------------------------------------------------------
+# AUTO GPS COMPONENT
+# ---------------------------------------------------------------
+def auto_detect_gps(username):
+    """Auto-detects GPS and saves to Supabase via JS + query params."""
+    lat = st.query_params.get("lat")
+    lon = st.query_params.get("lon")
+
+    if lat and lon:
+        try:
+            db_update_user(username, {"home_lat": float(lat), "home_lon": float(lon)})
+            st.session_state.gps_saved = True
+        except:
+            pass
+        return
+
+    if not st.session_state.get("gps_saved"):
+        components.html("""
+<!DOCTYPE html><html><head>
+<style>body{margin:0;padding:0;}</style>
+</head><body>
+<script>
+function detectAndSend() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                var lat = pos.coords.latitude.toFixed(6);
+                var lon = pos.coords.longitude.toFixed(6);
+                var url = window.parent.location.href.split('?')[0];
+                window.parent.location.href = url + '?lat=' + lat + '&lon=' + lon;
+            },
+            function(err) { console.log('GPS denied'); },
+            {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
+        );
+    }
+}
+detectAndSend();
+</script>
+</body></html>
+""", height=0)
 
 # ---------------------------------------------------------------
 # LOGIN PAGE
@@ -402,6 +444,9 @@ def show_dashboard():
         st.rerun()
 
     show_header(logged_in=True)
+
+    # Auto detect and update GPS location
+    auto_detect_gps(username)
 
     notifications = db_get_notifications(username)
     unread        = [n for n in notifications if not n.get('is_read', False)]
