@@ -136,6 +136,7 @@ st.markdown("""
 .stTextInput input, .stNumberInput input { border-radius: 10px !important; border: 1.5px solid #dbeafe !important; }
 [data-testid="metric-container"]:hover { transform: translateY(-4px); transition: 0.2s; }
 .stTabs [aria-selected="true"] { background: linear-gradient(135deg, #003087, #0072CE) !important; color: white !important; border-radius: 8px; }
+.stTabs [aria-selected="false"] { color: #003087 !important; font-weight: 600 !important; }
 </style>
 """, unsafe_allow_html=True)
 
