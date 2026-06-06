@@ -134,11 +134,12 @@ st.markdown("""
 .stButton > button { background: linear-gradient(135deg, #003087, #0072CE) !important; color: white !important; border-radius: 10px !important; font-weight: 600 !important; padding: 11px !important; border: none !important; transition: 0.25s !important; }
 .stButton > button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,48,135,0.25); }
 .stTextInput input, .stNumberInput input { border-radius: 10px !important; border: 1.5px solid #dbeafe !important; }
-[data-testid="metric-container"]:hover { transform: translateY(-4px); transition: 0.2s; }
 .stTabs [aria-selected="true"] { background: linear-gradient(135deg, #003087, #0072CE) !important; color: white !important; border-radius: 8px; }
 .stTabs [aria-selected="false"] { color: #003087 !important; font-weight: 600 !important; }
-[data-testid="metric-container"] label { color: #003087 !important; font-weight: 600 !important; }
-[data-testid="metric-container"] [data-testid="stMetricValue"] { color: #1e293b !important; }
+[data-testid="metric-container"] { background: white; border-radius: 12px; padding: 16px; border: 1.5px solid #dbeafe; box-shadow: 0 2px 8px rgba(0,48,135,0.05); }
+[data-testid="metric-container"] label { color: #003087 !important; font-weight: 700 !important; font-size: 14px !important; }
+[data-testid="stMetricValue"] { color: #1e293b !important; font-weight: 800 !important; }
+[data-testid="stMetricLabel"] { color: #003087 !important; font-weight: 700 !important; }
 </style>
 """, unsafe_allow_html=True)
 
