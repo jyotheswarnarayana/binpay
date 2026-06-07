@@ -293,43 +293,47 @@ function go(){
 # ---------------------------------------------------------------
 # AUTO GPS COMPONENT
 # ---------------------------------------------------------------
-def auto_detect_gps(username):
-    """Auto-detects live GPS every session and stores in session_state + Supabase."""
+def auto_detect_gps():
+    """Auto-detects live GPS using JS and stores in session_state via query params."""
+    # If already saved this session, skip
+    if st.session_state.get("gps_saved"):
+        return
+
+    # Check if coords came back via query params
     lat = st.query_params.get("lat")
     lon = st.query_params.get("lon")
+    user_qp = st.query_params.get("user")
 
     if lat and lon:
         try:
-            st.session_state.live_lat = float(lat)
-            st.session_state.live_lon = float(lon)
+            st.session_state.live_lat  = float(lat)
+            st.session_state.live_lon  = float(lon)
             st.session_state.gps_saved = True
         except:
             pass
         return
 
-    if not st.session_state.get("gps_saved"):
-        components.html("""
-<!DOCTYPE html><html><head>
-<style>body{margin:0;padding:0;}</style>
-</head><body>
+    # Inject JS that gets GPS and reloads with coords in URL
+    user_qp = st.session_state.current_user or ""
+    components.html(f"""
+<!DOCTYPE html><html><body>
 <script>
-function detectAndSend() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                var lat = pos.coords.latitude.toFixed(6);
-                var lon = pos.coords.longitude.toFixed(6);
-                var base = window.parent.location.href.split('?')[0];
-                window.parent.location.href = base + '?lat=' + lat + '&lon=' + lon;
-            },
-            function(err) {
-                console.log('GPS denied or unavailable');
-            },
-            {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
-        );
-    }
-}
-detectAndSend();
+if (navigator.geolocation) {{
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {{
+            var lat = pos.coords.latitude.toFixed(6);
+            var lon = pos.coords.longitude.toFixed(6);
+            var base = window.parent.location.href.split('?')[0];
+            window.parent.location.replace(base + '?user={user_qp}&lat=' + lat + '&lon=' + lon);
+        }},
+        function(err) {{
+            console.warn('GPS error: ' + err.message);
+        }},
+        {{enableHighAccuracy: true, timeout: 15000, maximumAge: 0}}
+    );
+}} else {{
+    console.warn('Geolocation not supported');
+}}
 </script>
 </body></html>
 """, height=0)
@@ -450,7 +454,7 @@ def show_dashboard():
     show_header(logged_in=True)
 
     # Auto detect and update GPS location
-    auto_detect_gps(username)
+    auto_detect_gps()
 
     notifications = db_get_notifications(username)
     unread        = [n for n in notifications if not n.get('is_read', False)]
