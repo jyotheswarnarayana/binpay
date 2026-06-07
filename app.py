@@ -178,7 +178,7 @@ def generate_card_number(seed):
 defaults = {
     'logged_in': False, 'current_user': None, 'page': 'login',
     'pending_transaction': None, 'pin_attempts': 0, 'selected_merchant': None,
-    'gps_saved': False,
+    'gps_saved': False, 'live_lat': None, 'live_lon': None,
 }
 for key, value in defaults.items():
     if key not in st.session_state:
@@ -293,13 +293,14 @@ function go(){
 # AUTO GPS COMPONENT
 # ---------------------------------------------------------------
 def auto_detect_gps(username):
-    """Auto-detects GPS and saves to Supabase via JS + query params."""
+    """Auto-detects live GPS every session and stores in session_state + Supabase."""
     lat = st.query_params.get("lat")
     lon = st.query_params.get("lon")
 
     if lat and lon:
         try:
-            db_update_user(username, {"home_lat": float(lat), "home_lon": float(lon)})
+            st.session_state.live_lat = float(lat)
+            st.session_state.live_lon = float(lon)
             st.session_state.gps_saved = True
         except:
             pass
@@ -317,10 +318,12 @@ function detectAndSend() {
             function(pos) {
                 var lat = pos.coords.latitude.toFixed(6);
                 var lon = pos.coords.longitude.toFixed(6);
-                var url = window.parent.location.href.split('?')[0];
-                window.parent.location.href = url + '?lat=' + lat + '&lon=' + lon;
+                var base = window.parent.location.href.split('?')[0];
+                window.parent.location.href = base + '?lat=' + lat + '&lon=' + lon;
             },
-            function(err) { console.log('GPS denied'); },
+            function(err) {
+                console.log('GPS denied or unavailable');
+            },
             {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
         );
     }
@@ -455,11 +458,20 @@ def show_dashboard():
 
     st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
     first_name = user['name'].split()[0]
-    joined     = datetime.now().strftime("%B %Y")
+
+    live_lat = st.session_state.get('live_lat')
+    live_lon = st.session_state.get('live_lon')
+    if live_lat and live_lon:
+        gps_status = f"📍 Live Location Detected: {live_lat:.4f}, {live_lon:.4f}"
+        gps_color  = "#16a34a"
+    else:
+        gps_status = "⏳ Detecting your location... (allow location access in browser)"
+        gps_color  = "#d97706"
+
     st.markdown(f"""
     <div style="padding:0 4px 18px 4px;">
         <h2 style="color:#003087;font-size:1.5rem;font-weight:800;margin:0;">Good day, <span style="color:#0072CE;">{first_name}</span> 👋</h2>
-        <p style="color:#94a3b8;margin:4px 0 0 0;font-size:0.88rem;">🛡️ GPS Fraud Protection Active</p>
+        <p style="color:{gps_color};margin:4px 0 0 0;font-size:0.88rem;font-weight:600;">{gps_status}</p>
     </div>""", unsafe_allow_html=True)
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -539,8 +551,11 @@ def show_dashboard():
             amount = st.number_input("Amount (USD)", min_value=1.0, max_value=float(user['balance']), value=50.0, step=1.0)
 
             if st.button("💳 Process Payment"):
+                # Use live session GPS if available, else fall back to saved location
+                user_lat = st.session_state.live_lat or float(user['home_lat'])
+                user_lon = st.session_state.live_lon or float(user['home_lon'])
                 fraud_prob, distance_km = get_fraud_probability(
-                    amount, float(user['home_lat']), float(user['home_lon']),
+                    amount, user_lat, user_lon,
                     merchant['lat'], merchant['lon']
                 )
                 txn = {
