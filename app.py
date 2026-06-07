@@ -12,9 +12,8 @@ from streamlit_js_eval import get_geolocation
 # ---------------------------------------------------------------
 # Supabase Config
 # ---------------------------------------------------------------
-SUPABASE_URL = "https://zxeqlmahvtsbyxwyzvrs.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4ZXFsbWFodnRzYnl4d3l6dnJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDAwMTMsImV4cCI6MjA5NjI3NjAxM30.ECc31qYHfVfAvPjWyuhGO0b6fdPCuI9XcRKfFE3woW0"
-
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 @st.cache_resource
 def get_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
