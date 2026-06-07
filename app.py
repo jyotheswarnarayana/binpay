@@ -208,6 +208,7 @@ def show_header(logged_in=False):
         with col3:
             st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
             if st.button("Sign Out"):
+                st.query_params.clear()
                 for key in defaults:
                     st.session_state[key] = defaults[key]
                 st.rerun()
@@ -741,10 +742,35 @@ def show_dashboard():
 # ---------------------------------------------------------------
 # APP ROUTER
 # ---------------------------------------------------------------
+
+# Restore session from query params on refresh
+if not st.session_state.logged_in:
+    qp_user = st.query_params.get("user")
+    qp_lat  = st.query_params.get("lat")
+    qp_lon  = st.query_params.get("lon")
+    if qp_user:
+        user_check = db_get_user(qp_user)
+        if user_check:
+            st.session_state.logged_in    = True
+            st.session_state.current_user = qp_user
+            st.session_state.page         = 'dashboard'
+            if qp_lat and qp_lon:
+                try:
+                    st.session_state.live_lat  = float(qp_lat)
+                    st.session_state.live_lon  = float(qp_lon)
+                    st.session_state.gps_saved = True
+                except:
+                    pass
+
 if not st.session_state.logged_in:
     if st.session_state.page == 'signup':
         show_signup_page()
     else:
         show_login_page()
 else:
+    # Keep user in query params so refresh restores session
+    if st.session_state.current_user:
+        existing_params = dict(st.query_params)
+        existing_params["user"] = st.session_state.current_user
+        st.query_params.update(existing_params)
     show_dashboard()
