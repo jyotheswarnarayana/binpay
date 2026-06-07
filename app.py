@@ -7,6 +7,7 @@ import random
 import time
 import base64
 from supabase import create_client, Client
+from streamlit_js_eval import get_geolocation
 
 # ---------------------------------------------------------------
 # Supabase Config
@@ -294,49 +295,18 @@ function go(){
 # AUTO GPS COMPONENT
 # ---------------------------------------------------------------
 def auto_detect_gps():
-    """Auto-detects live GPS using JS and stores in session_state via query params."""
-    # If already saved this session, skip
+    """Auto-detects live GPS using streamlit-js-eval."""
     if st.session_state.get("gps_saved"):
         return
 
-    # Check if coords came back via query params
-    lat = st.query_params.get("lat")
-    lon = st.query_params.get("lon")
-    user_qp = st.query_params.get("user")
-
-    if lat and lon:
+    location = get_geolocation()
+    if location and "coords" in location:
         try:
-            st.session_state.live_lat  = float(lat)
-            st.session_state.live_lon  = float(lon)
+            st.session_state.live_lat  = float(location["coords"]["latitude"])
+            st.session_state.live_lon  = float(location["coords"]["longitude"])
             st.session_state.gps_saved = True
         except:
             pass
-        return
-
-    # Inject JS that gets GPS and reloads with coords in URL
-    user_qp = st.session_state.current_user or ""
-    components.html(f"""
-<!DOCTYPE html><html><body>
-<script>
-if (navigator.geolocation) {{
-    navigator.geolocation.getCurrentPosition(
-        function(pos) {{
-            var lat = pos.coords.latitude.toFixed(6);
-            var lon = pos.coords.longitude.toFixed(6);
-            var base = window.parent.location.href.split('?')[0];
-            window.parent.location.replace(base + '?user={user_qp}&lat=' + lat + '&lon=' + lon);
-        }},
-        function(err) {{
-            console.warn('GPS error: ' + err.message);
-        }},
-        {{enableHighAccuracy: true, timeout: 15000, maximumAge: 0}}
-    );
-}} else {{
-    console.warn('Geolocation not supported');
-}}
-</script>
-</body></html>
-""", height=0)
 
 # ---------------------------------------------------------------
 # LOGIN PAGE
